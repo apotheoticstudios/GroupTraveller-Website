@@ -301,6 +301,7 @@ function App() {
           <a href="#demo">Try it</a>
           <a href="#features">Features</a>
           <a href="#faq">FAQ</a>
+          <a href="/privacy">Privacy</a>
         </nav>
 
         <a className="header-cta" href="#download">
@@ -327,6 +328,7 @@ function App() {
                 ["Try it", "#demo"],
                 ["Features", "#features"],
                 ["FAQ", "#faq"],
+                ["Privacy", "/privacy"],
               ].map(([label, href]) => (
                 <a href={href} onClick={() => setMenuOpen(false)} key={href}>
                   {label}
