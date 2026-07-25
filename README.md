@@ -3,7 +3,10 @@
 A polished, responsive product site for the GroupTraveller mobile app. It
 explains the create–share–vote flow, includes an interactive product demo,
 showcases the post-decision planning toolkit, and is designed to deploy directly
-to Cloudflare Pages.
+to Cloudflare Pages. The production site also includes an App Store-ready
+privacy policy at `/privacy`, with account and guest data disclosures, device
+permissions, third-party service providers, retention, privacy rights, and
+account-deletion instructions.
 
 ## Stack
 

@@ -837,6 +837,7 @@ function App() {
           <a href="#how">How it works</a>
           <a href="#features">Features</a>
           <a href="#faq">FAQ</a>
+          <a href="/privacy">Privacy</a>
           <a href="mailto:hello@grouptraveller.com">Contact</a>
         </div>
         <div className="footer-bottom">
