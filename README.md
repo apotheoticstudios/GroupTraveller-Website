@@ -3,7 +3,7 @@
 A polished, responsive product site for the GroupTraveller mobile app. It
 explains the create–share–vote flow, includes an interactive product demo,
 showcases the post-decision planning toolkit, and is designed to deploy directly
-to Cloudflare Pages. The production site also includes an App Store-ready
+to Cloudflare Workers or Pages. The production site also includes an App Store-ready
 privacy policy at `/privacy`, with account and guest data disclosures, device
 permissions, third-party service providers, retention, privacy rights, and
 account-deletion instructions.
@@ -36,38 +36,40 @@ npm test
 This performs the TypeScript check and creates the deployable static site in
 `dist/`.
 
-## Deploy to Cloudflare Pages
+## Deploy to Cloudflare
+
+The live `grouptraveller` Worker uses Cloudflare Workers Builds. Its
+`wrangler.jsonc` publishes the Vite output in `dist/` as static assets and sends
+unknown paths such as `/privacy` to the React app.
 
 ### Connect a Git repository
 
-1. Push this repository to GitHub or GitLab.
-2. In the Cloudflare dashboard, open **Workers & Pages** and choose
-   **Create application → Pages → Connect to Git**.
-3. Select the repository and use:
-   - Framework preset: `Vite`
+1. Push this repository to GitHub.
+2. In the Cloudflare dashboard, open the `grouptraveller` Worker and choose
+   **Settings → Build → Connect**.
+3. Select `apotheoticstudios/GroupTraveller-Website` and use:
+   - Production branch: `main`
    - Build command: `npm run build`
-   - Build output directory: `dist`
+   - Deploy command: `npx wrangler deploy`
    - Root directory: leave blank
 4. Save and deploy.
 
-No environment variables are required. Cloudflare will automatically create a
-preview URL for each branch and a production deployment from the production
-branch.
+No environment variables are required. A push to `main` starts a production
+build and deployment. Other branches can create preview builds when
+non-production branch builds are enabled.
 
 ### Direct upload
 
 Build locally with `npm run build`, then drag the generated `dist/` folder into
-a new Cloudflare Pages project using **Create application → Get started → Drag
-and drop your files**. Choose this route only if you do not need Git-triggered
-deployments; Cloudflare does not currently let a Direct Upload project switch to
-Git integration later.
+the Worker's **New deployment** screen. Under **Advanced settings**, set
+**Not found handling** to `single-page-application` so `/privacy` and other
+client-side routes load correctly.
 
 ## Custom domain
 
-After the first deployment, open the Pages project, choose **Custom domains →
-Set up a domain**, and enter the intended hostname. Apex domains must use
-Cloudflare nameservers. For a subdomain using another DNS provider, create the
-CNAME Cloudflare shows after associating the hostname with the Pages project.
+After the first deployment, open the Worker, choose **Domains → Add a domain**,
+and enter the intended hostname. The production Worker is connected to
+`grouptraveller.app`.
 
 ## Contact form
 
