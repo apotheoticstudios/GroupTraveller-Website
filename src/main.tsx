@@ -2,11 +2,20 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import PrivacyPolicy from "./PrivacyPolicy";
+import JoinFlow from "./JoinFlow";
 import "./styles.css";
 
+const rawSegments = window.location.pathname.split("/").filter(Boolean);
 const normalizedPath =
   window.location.pathname.toLowerCase().replace(/\/+$/, "") || "/";
 const isPrivacyPage = normalizedPath === "/privacy";
+
+// /join/<code> → the web guest flow. Keep the code's original case (the raw
+// pathname), decoding any URL escaping.
+const joinCode =
+  rawSegments[0]?.toLowerCase() === "join" && rawSegments[1]
+    ? decodeURIComponent(rawSegments[1])
+    : null;
 
 if (isPrivacyPage) {
   const title = "Privacy Policy — GroupTraveller";
@@ -33,6 +42,12 @@ if (isPrivacyPage) {
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    {isPrivacyPage ? <PrivacyPolicy /> : <App />}
+    {joinCode ? (
+      <JoinFlow code={joinCode} />
+    ) : isPrivacyPage ? (
+      <PrivacyPolicy />
+    ) : (
+      <App />
+    )}
   </StrictMode>,
 );
