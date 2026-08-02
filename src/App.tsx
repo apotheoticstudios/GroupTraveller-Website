@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowRight,
   BellRing,
@@ -272,13 +272,30 @@ function ProductDemo() {
 function App() {
   const [menuOpen, setMenuOpen] = useState(false);
 
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMenuOpen(false);
+    };
+
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", closeOnEscape);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [menuOpen]);
+
   return (
     <>
       <a className="skip-link" href="#main">
         Skip to content
       </a>
 
-      <header className="site-header">
+      <header className={`site-header${menuOpen ? " is-menu-open" : ""}`}>
         <a className="brand" href="#top" aria-label="GroupTraveller home">
           <span className="brand-mark" aria-hidden="true">
             G
@@ -314,33 +331,40 @@ function App() {
         >
           {menuOpen ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}
         </button>
-
-        {menuOpen && (
-          <div className="mobile-menu" id="mobile-menu">
-            <nav aria-label="Mobile navigation">
-              {[
-                ["How it works", "#how"],
-                ["Try it", "#demo"],
-                ["Features", "#features"],
-                ["FAQ", "#faq"],
-                ["Privacy", "/privacy"],
-              ].map(([label, href]) => (
-                <a href={href} onClick={() => setMenuOpen(false)} key={href}>
-                  {label}
-                </a>
-              ))}
-              <a
-                className="button button-navy"
-                href={APP_STORE_URL}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Get the iPhone app <Download aria-hidden="true" size={18} />
-              </a>
-            </nav>
-          </div>
-        )}
       </header>
+
+      {menuOpen && (
+        <div
+          className="mobile-menu"
+          id="mobile-menu"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Site navigation"
+        >
+          <nav aria-label="Mobile navigation">
+            {[
+              ["How it works", "#how"],
+              ["Try it", "#demo"],
+              ["Features", "#features"],
+              ["FAQ", "#faq"],
+              ["Privacy", "/privacy"],
+            ].map(([label, href]) => (
+              <a href={href} onClick={() => setMenuOpen(false)} key={href}>
+                {label}
+              </a>
+            ))}
+            <a
+              className="button button-navy"
+              href={APP_STORE_URL}
+              target="_blank"
+              rel="noreferrer"
+              onClick={() => setMenuOpen(false)}
+            >
+              Get the iPhone app <Download aria-hidden="true" size={18} />
+            </a>
+          </nav>
+        </div>
+      )}
 
       <main id="main">
         <section className="hero" id="top">
@@ -350,8 +374,11 @@ function App() {
               The group trip app that gets a yes
             </p>
             <h1>
-              Pick the dates. Vote on the destination.{" "}
-              <span>Make the group trip happen.</span>
+              <span className="hero-phrase">Pick the dates.</span>{" "}
+              <span className="hero-phrase">Vote on the destination.</span>{" "}
+              <span className="hero-phrase hero-phrase-accent">
+                Make the group trip happen.
+              </span>
             </h1>
             <p className="hero-intro">
               One invite link, zero account drama. Find when everyone’s free,

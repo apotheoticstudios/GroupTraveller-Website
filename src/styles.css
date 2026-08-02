@@ -250,7 +250,7 @@ p {
   line-height: 0.98;
 }
 
-.hero h1 span {
+.hero-phrase-accent {
   color: var(--coral);
 }
 
@@ -2587,6 +2587,13 @@ p {
     height: 70px;
   }
 
+  .site-header.is-menu-open {
+    z-index: 102;
+    border-bottom-color: transparent;
+    background: transparent;
+    backdrop-filter: none;
+  }
+
   .header-cta {
     display: none;
   }
@@ -2608,24 +2615,29 @@ p {
     position: fixed;
     z-index: 101;
     inset: 0;
-    display: block;
-    padding: 104px 28px 40px;
+    min-height: 100dvh;
+    display: flex;
+    overflow-y: auto;
+    padding: calc(104px + env(safe-area-inset-top)) 28px
+      calc(32px + env(safe-area-inset-bottom));
     background: var(--coral);
     color: white;
   }
 
-  .site-header:has(.mobile-menu) .brand {
+  .site-header.is-menu-open .brand {
     position: relative;
     z-index: 102;
     color: white;
   }
 
-  .site-header:has(.mobile-menu) .brand-mark {
+  .site-header.is-menu-open .brand-mark {
     background: white;
     color: var(--coral);
   }
 
   .mobile-menu nav {
+    width: 100%;
+    flex: 1;
     display: flex;
     flex-direction: column;
   }
@@ -2634,13 +2646,15 @@ p {
     padding: 17px 0;
     border-bottom: 1px solid rgba(255, 255, 255, 0.26);
     font-family: var(--display);
-    font-size: 1.9rem;
+    font-size: clamp(1.65rem, 7.5vw, 2rem);
     font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 1.1;
     text-decoration: none;
   }
 
   .mobile-menu .button {
-    margin-top: 30px;
+    margin-top: auto;
   }
 
   .hero {
@@ -2793,7 +2807,19 @@ p {
   }
 
   .hero h1 {
-    font-size: clamp(3.05rem, 14vw, 4.5rem);
+    font-size: clamp(2.75rem, 13vw, 3.35rem);
+    letter-spacing: -0.058em;
+    line-height: 1;
+    text-wrap: pretty;
+  }
+
+  .hero .eyebrow {
+    font-size: 0.65rem;
+    letter-spacing: 0.06em;
+  }
+
+  .hero-phrase {
+    display: block;
   }
 
   .hero-actions {
@@ -2851,7 +2877,10 @@ p {
   .trip-view-copy h2,
   .faq-intro h2,
   .download-copy h2 {
-    font-size: clamp(2.6rem, 12vw, 3.6rem);
+    font-size: clamp(2.35rem, 10vw, 3.1rem);
+    letter-spacing: -0.055em;
+    line-height: 1.03;
+    text-wrap: pretty;
   }
 
   .flow-visual {
