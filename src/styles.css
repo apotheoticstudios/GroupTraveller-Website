@@ -1824,63 +1824,21 @@ p {
   color: white;
 }
 
-.download-copy > p:not(.eyebrow, .form-status) {
+.download-copy > p:not(.eyebrow) {
   max-width: 590px;
   margin: 28px 0 0;
   color: rgba(255, 255, 255, 0.7);
   line-height: 1.7;
 }
 
-.download-form {
+.download-actions {
   display: flex;
-  gap: 10px;
-  max-width: 580px;
   margin-top: 34px;
 }
 
-.download-form input {
-  min-width: 0;
-  flex: 1;
-  height: 54px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 14px;
-  padding: 0 16px;
-  background: rgba(255, 255, 255, 0.08);
-  color: white;
-  font-size: 0.88rem;
-  outline: none;
-}
-
-.download-form input::placeholder {
-  color: rgba(255, 255, 255, 0.45);
-}
-
-.download-form input:focus {
-  border-color: var(--coral);
-  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.22);
-}
-
-.download-form button {
-  min-height: 54px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  border: 0;
-  border-radius: 14px;
-  padding: 0 18px;
-  background: var(--coral);
-  color: white;
-  cursor: pointer;
-  font-size: 0.79rem;
-  font-weight: 800;
-}
-
-.form-status {
-  min-height: 1em;
-  margin: 12px 0 0;
-  color: var(--coral-soft);
-  font-size: 0.68rem;
+.download-actions .button {
+  min-height: 56px;
+  padding-inline: 24px;
 }
 
 .store-note {
@@ -1891,7 +1849,8 @@ p {
   margin-top: 26px;
 }
 
-.store-note span {
+.store-note span,
+.store-note a {
   display: flex;
   align-items: center;
   gap: 7px;
@@ -1900,6 +1859,13 @@ p {
   border-radius: 11px;
   color: rgba(255, 255, 255, 0.74);
   font-size: 0.68rem;
+  text-decoration: none;
+}
+
+.store-note a:hover,
+.store-note a:focus-visible {
+  border-color: var(--coral);
+  color: white;
 }
 
 .store-note small {
@@ -2947,8 +2913,8 @@ p {
     grid-template-columns: 1fr;
   }
 
-  .download-form {
-    flex-direction: column;
+  .download-actions .button {
+    width: 100%;
   }
 
   .download-art {

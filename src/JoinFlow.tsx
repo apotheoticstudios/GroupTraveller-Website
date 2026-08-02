@@ -657,7 +657,9 @@ export default function JoinFlow({ code }: { code: string }) {
               real time — they'll lock in the final plan soon.
             </p>
             <a
-              href="https://grouptraveller.app"
+              href="https://apps.apple.com/au/app/grouptraveller/id6794262706"
+              target="_blank"
+              rel="noreferrer"
               style={{ ...S.primaryBtn, display: "block", textAlign: "center", textDecoration: "none" }}
             >
               Get the app for live flight &amp; hotel prices

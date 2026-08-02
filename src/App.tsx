@@ -1,4 +1,4 @@
-import { FormEvent, useState } from "react";
+import { useState } from "react";
 import {
   ArrowRight,
   BellRing,
@@ -34,6 +34,9 @@ import {
 } from "lucide-react";
 
 type DemoStep = "dates" | "vote" | "match";
+
+const APP_STORE_URL =
+  "https://apps.apple.com/au/app/grouptraveller/id6794262706";
 
 const audiences = ["Friends", "Couples", "Families", "Teams", "Sporting groups"];
 
@@ -268,19 +271,6 @@ function ProductDemo() {
 
 function App() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [formMessage, setFormMessage] = useState("");
-
-  const handleWaitlist = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    const email = String(form.get("email") ?? "");
-    const subject = encodeURIComponent("Send me the GroupTraveller app");
-    const body = encodeURIComponent(
-      `Hi GroupTraveller,\n\nPlease send the app link and launch updates to ${email}.\n`,
-    );
-    setFormMessage("Your email app is opening with your request ready to send.");
-    window.location.href = `mailto:hello@grouptraveller.com?subject=${subject}&body=${body}`;
-  };
 
   return (
     <>
@@ -304,8 +294,13 @@ function App() {
           <a href="/privacy">Privacy</a>
         </nav>
 
-        <a className="header-cta" href="#download">
-          Get the app
+        <a
+          className="header-cta"
+          href={APP_STORE_URL}
+          target="_blank"
+          rel="noreferrer"
+        >
+          Get the iPhone app
           <Download aria-hidden="true" size={16} />
         </a>
 
@@ -334,8 +329,13 @@ function App() {
                   {label}
                 </a>
               ))}
-              <a className="button button-navy" href="#download">
-                Get the app <Download aria-hidden="true" size={18} />
+              <a
+                className="button button-navy"
+                href={APP_STORE_URL}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Get the iPhone app <Download aria-hidden="true" size={18} />
               </a>
             </nav>
           </div>
@@ -359,9 +359,14 @@ function App() {
               friendly place.
             </p>
             <div className="hero-actions">
-              <a className="button button-coral" href="#download">
-                Start a trip — it’s free
-                <ArrowRight aria-hidden="true" size={19} />
+              <a
+                className="button button-coral"
+                href={APP_STORE_URL}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Download free on iPhone
+                <Download aria-hidden="true" size={19} />
               </a>
               <a className="button button-ghost" href="#demo">
                 Try the 30-sec demo
@@ -547,9 +552,14 @@ function App() {
                 The result is clear to everyone
               </li>
             </ul>
-            <a className="button button-white" href="#download">
-              Start your own trip
-              <ArrowRight aria-hidden="true" size={18} />
+            <a
+              className="button button-white"
+              href={APP_STORE_URL}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Get GroupTraveller on iPhone
+              <ExternalLink aria-hidden="true" size={18} />
             </a>
           </div>
           <div className="demo-device">
@@ -774,36 +784,28 @@ function App() {
             </p>
             <h2>Turn “sometime” into dates on the calendar.</h2>
             <p>
-              Get the GroupTraveller launch link and be first to start a trip
-              with your favourite people.
+              GroupTraveller is available now on iPhone. Download it free and
+              start planning with your favourite people.
             </p>
-            <form className="download-form" onSubmit={handleWaitlist}>
-              <label className="sr-only" htmlFor="download-email">
-                Email address
-              </label>
-              <input
-                id="download-email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                placeholder="you@example.com"
-                required
-              />
-              <button type="submit">
-                Send me the app <ArrowRight aria-hidden="true" size={18} />
-              </button>
-            </form>
-            <p className="form-status" aria-live="polite">
-              {formMessage}
-            </p>
+            <div className="download-actions">
+              <a
+                className="button button-coral"
+                href={APP_STORE_URL}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <Download aria-hidden="true" size={19} />
+                Download on the App Store
+              </a>
+            </div>
             <div className="store-note">
-              <span>
+              <a href={APP_STORE_URL} target="_blank" rel="noreferrer">
                 <Smartphone aria-hidden="true" size={17} /> iPhone
-              </span>
+              </a>
               <span>
-                <Download aria-hidden="true" size={17} /> Android
+                <Download aria-hidden="true" size={17} /> Android coming soon
               </span>
-              <small>App store links will appear here at launch.</small>
+              <small>Free to download from Apple’s App Store.</small>
             </div>
           </div>
           <div className="download-art" aria-hidden="true">
@@ -839,6 +841,9 @@ function App() {
           <a href="#how">How it works</a>
           <a href="#features">Features</a>
           <a href="#faq">FAQ</a>
+          <a href={APP_STORE_URL} target="_blank" rel="noreferrer">
+            App Store
+          </a>
           <a href="/privacy">Privacy</a>
           <a href="mailto:hello@grouptraveller.com">Contact</a>
         </div>

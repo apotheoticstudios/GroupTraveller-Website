@@ -71,12 +71,11 @@ After the first deployment, open the Worker, choose **Domains → Add a domain**
 and enter the intended hostname. The production Worker is connected to
 `grouptraveller.app`.
 
-## Contact form
+## App Store
 
-The site remains backend-free: submitting the app-access form opens the
-visitor's email application with their address prefilled to
-`hello@grouptraveller.com`. Replace that inbox and wire the real App Store and
-Google Play URLs in `src/App.tsx` before the public app launch.
+The site remains backend-free. Its primary download calls-to-action open the
+live GroupTraveller listing on Apple's App Store. Android is presented as
+coming soon until a Google Play listing is available.
 
 ## Image credits
 
