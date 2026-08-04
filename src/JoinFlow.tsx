@@ -36,6 +36,11 @@ interface TripInvite {
   responseCount: number;
 }
 
+interface SubmissionReceipt {
+  responseId: string;
+  expenseAccessToken: string;
+}
+
 type Step = "identity" | "dates" | "vote" | "review" | "done";
 
 async function rpc<T>(name: string, body: Record<string, unknown>): Promise<T> {
@@ -433,17 +438,41 @@ export default function JoinFlow({ code }: { code: string }) {
     setSubmitting(true);
     setSubmitError(null);
     try {
-      await rpc("submit_trip_response", {
+      const votePayload = trip.destinations.map((d) => ({
+        destination_id: d.id,
+        liked: votes[d.id] ?? false,
+      }));
+      const receipt = await rpc<Partial<SubmissionReceipt>>(
+        "submit_trip_response",
+        {
+          p_trip_id: trip.id,
+          p_guest_name: name.trim() || "Guest",
+          p_guest_emoji: emoji,
+          p_available_dates: dates,
+          p_votes: votePayload,
+          p_submission_id: submissionId(trip.id),
+          p_trip_code: trip.code,
+        }
+      );
+      if (
+        typeof receipt.responseId !== "string" ||
+        typeof receipt.expenseAccessToken !== "string"
+      ) {
+        throw new Error("The trip response returned an invalid receipt.");
+      }
+
+      // `submit_trip_response` deliberately replays the original receipt when
+      // this browser retries its stable submission ID. Apply the current
+      // payload through the capability-scoped edit RPC so returning voters see
+      // success only after their latest dates and votes are actually saved.
+      await rpc("update_trip_response", {
         p_trip_id: trip.id,
+        p_response_id: receipt.responseId,
+        p_access_token: receipt.expenseAccessToken,
         p_guest_name: name.trim() || "Guest",
         p_guest_emoji: emoji,
         p_available_dates: dates,
-        p_votes: trip.destinations.map((d) => ({
-          destination_id: d.id,
-          liked: votes[d.id] ?? false,
-        })),
-        p_submission_id: submissionId(trip.id),
-        p_trip_code: trip.code,
+        p_votes: votePayload,
       });
       setStep("done");
     } catch (e: unknown) {
