@@ -28,6 +28,8 @@ interface TripInvite {
   description: string | null;
   date_range_start: string;
   date_range_end: string;
+  trip_length_min: number;
+  trip_length_max: number;
   group_size_estimate: number;
   status: "open" | "closed" | "decided";
   destinations: Destination[];
@@ -97,6 +99,18 @@ function monthLabel(key: string): string {
     month: "long",
     year: "numeric",
   });
+}
+
+function shortDateLabel(iso: string): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function dateRangeLabel(startISO: string, endISO: string): string {
+  return `${shortDateLabel(startISO)} – ${shortDateLabel(endISO)}`;
 }
 
 /** Mon-first weekday index (0=Mon … 6=Sun). */
@@ -255,6 +269,12 @@ export default function JoinFlow({ code }: { code: string }) {
   const [name, setName] = useState("");
   const [emoji, setEmoji] = useState(EMOJI_OPTIONS[0]);
   const [dates, setDates] = useState<string[]>([]);
+  // Where the people who already answered overlap. Counts only — never names;
+  // anyone with the invite code can call this. Fails soft to no shading.
+  const [overlap, setOverlap] = useState<{
+    counts: Record<string, number>;
+    respondentCount: number;
+  }>({ counts: {}, respondentCount: 0 });
   const [votes, setVotes] = useState<Record<string, boolean>>({});
   const [voteIndex, setVoteIndex] = useState(0);
   const [submitting, setSubmitting] = useState(false);
@@ -274,6 +294,24 @@ export default function JoinFlow({ code }: { code: string }) {
         setLoadError(e instanceof Error ? e.message : "Couldn't load this trip.");
       })
       .finally(() => active && setLoading(false));
+
+    // Best-effort: shading is a nicety, so a failure here must never block
+    // someone from voting.
+    rpc<{ counts?: Record<string, number>; respondentCount?: number }>(
+      "get_trip_availability",
+      { p_code: code }
+    )
+      .then((data) => {
+        if (!active) return;
+        setOverlap({
+          counts: data?.counts ?? {},
+          respondentCount: data?.respondentCount ?? 0,
+        });
+      })
+      .catch(() => {
+        /* no shading */
+      });
+
     return () => {
       active = false;
     };
@@ -291,11 +329,6 @@ export default function JoinFlow({ code }: { code: string }) {
     }
     return [...byMonth.entries()];
   }, [trip]);
-
-  const allDates = useMemo(
-    () => (trip ? eachDate(trip.date_range_start, trip.date_range_end) : []),
-    [trip]
-  );
 
   if (loading) {
     return (
@@ -341,10 +374,48 @@ export default function JoinFlow({ code }: { code: string }) {
     );
   }
 
+  // Guests must pick ONE consecutive block whose length matches the trip the
+  // organiser planned. Mirrors lib/dateSelection.ts in the app — kept in sync by
+  // hand because the two bundles share no code.
+  const minNights = trip.trip_length_min;
+  const nights = Math.max(0, dates.length - 1);
+  const hasCompleteRange = dates.length > 1;
+  const datesValid = hasCompleteRange && nights >= minNights;
+  const minimumWanted = `${minNights} ${minNights === 1 ? "night" : "nights"}`;
+  const rangeError = !hasCompleteRange
+    ? null
+    : nights < minNights
+      ? `Too short · minimum is ${minimumWanted}`
+      : null;
+  const selectionLabel =
+    dates.length === 0
+      ? "Tap a date to start the range"
+      : dates.length === 1
+        ? "Now tap an end date"
+        : dateRangeLabel(dates[0], dates[dates.length - 1]);
+  const rangeStart = dates[0] ?? null;
+  const rangeEnd = dates.length > 1 ? dates[dates.length - 1] : null;
+
+  /** Background tint by how much of the group is already free (see the app's
+   *  overlapTint — kept in sync by hand; the bundles share no code). */
+  const overlapTint = (iso: string): string | null => {
+    const free = overlap.counts[iso] ?? 0;
+    if (overlap.respondentCount <= 0 || free <= 0) return null;
+    const share = free / overlap.respondentCount;
+    if (share >= 0.999) return "rgba(255,107,53,0.28)";
+    if (share >= 0.5) return "rgba(255,107,53,0.16)";
+    return "rgba(139,124,246,0.14)";
+  };
+
   const toggleDate = (iso: string) =>
-    setDates((prev) =>
-      prev.includes(iso) ? prev.filter((d) => d !== iso) : [...prev, iso]
-    );
+    setDates((prev) => {
+      if (prev.length === 0) return [iso];
+      if (prev.length > 1) return [iso]; // completed block → start over
+      const anchor = prev[0];
+      if (iso === anchor) return [];
+      const [a, b] = iso < anchor ? [iso, anchor] : [anchor, iso];
+      return eachDate(a, b);
+    });
 
   const dest = trip.destinations[voteIndex];
 
@@ -458,26 +529,27 @@ export default function JoinFlow({ code }: { code: string }) {
 
         {step === "dates" && (
           <>
-            <span style={S.kicker}>Step 1 · When are you free?</span>
-            <h1 style={S.h1}>Tap every date you could travel</h1>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
-              <button
-                style={S.chip(false)}
-                onClick={() => setDates(allDates.filter(isWeekend))}
-              >
-                Weekends
-              </button>
-              <button style={S.chip(false)} onClick={() => setDates([...allDates])}>
-                All dates
-              </button>
-              {dates.length > 0 && (
-                <button
-                  style={{ ...S.chip(false), color: "var(--muted)" }}
-                  onClick={() => setDates([])}
-                >
-                  Clear
-                </button>
-              )}
+            <span style={S.kicker}>Step 1 · Date range</span>
+            <h1 style={S.h1}>Choose your date range, {name.trim() || "traveller"}</h1>
+            <p style={{ ...S.sub, marginTop: 6 }}>
+              Tap the first and last day · at least {minimumWanted}
+            </p>
+
+            <div
+              role="status"
+              aria-live="polite"
+              style={{
+                marginTop: 16,
+                padding: "13px 15px",
+                borderRadius: 14,
+                border: `1px solid ${rangeError ? "var(--coral-dark)" : "var(--line)"}`,
+                background: rangeError ? "var(--coral-faint)" : "var(--white)",
+                color: rangeError ? "var(--coral-dark)" : "var(--navy)",
+                fontWeight: 700,
+                fontSize: 14,
+              }}
+            >
+              {rangeError ?? selectionLabel}
             </div>
 
             {months.map(([key, monthDates]) => {
@@ -510,18 +582,40 @@ export default function JoinFlow({ code }: { code: string }) {
                     ))}
                     {monthDates.map((iso) => {
                       const active = dates.includes(iso);
+                      const endpoint =
+                        active && (iso === rangeStart || iso === rangeEnd);
+                      const middle = active && !endpoint;
                       const day = Number(iso.slice(8, 10));
+                      const rangePosition =
+                        iso === rangeStart
+                          ? "start of selected range"
+                          : iso === rangeEnd
+                            ? "end of selected range"
+                            : middle
+                              ? "within selected range"
+                              : null;
+                      const overlapLabel =
+                        (overlap.counts[iso] ?? 0) > 0
+                          ? `${overlap.counts[iso]} of ${overlap.respondentCount} already free`
+                          : null;
                       return (
                         <button
                           key={iso}
                           onClick={() => toggleDate(iso)}
                           aria-pressed={active}
+                          aria-label={[iso, rangePosition, overlapLabel]
+                            .filter(Boolean)
+                            .join(", ")}
                           style={{
                             aspectRatio: "1 / 1",
-                            borderRadius: 12,
-                            border: `1px solid ${active ? "var(--coral)" : "var(--line)"}`,
-                            background: active ? "var(--coral)" : "var(--white)",
-                            color: active
+                            borderRadius: 999,
+                            border: `1px solid ${endpoint ? "var(--coral)" : "var(--line)"}`,
+                            background: endpoint
+                              ? "var(--coral)"
+                              : middle
+                                ? "var(--coral-faint)"
+                              : (overlapTint(iso) ?? "var(--white)"),
+                            color: endpoint
                               ? "#fff"
                               : isWeekend(iso)
                                 ? "var(--muted)"
@@ -549,12 +643,18 @@ export default function JoinFlow({ code }: { code: string }) {
                   ...S.primaryBtn,
                   marginTop: 0,
                   flex: 2,
-                  opacity: dates.length ? 1 : 0.5,
+                  opacity: datesValid ? 1 : 0.5,
                 }}
-                disabled={dates.length === 0}
+                disabled={!datesValid}
                 onClick={() => setStep("vote")}
               >
-                Next: vote ({dates.length} {dates.length === 1 ? "date" : "dates"}) →
+                {datesValid
+                  ? `Next: vote (${nights} ${nights === 1 ? "night" : "nights"}) →`
+                  : dates.length === 1
+                    ? "Choose an end date"
+                    : rangeError
+                      ? "Adjust the range"
+                      : "Choose a date range"}
               </button>
             </div>
           </>
@@ -600,7 +700,8 @@ export default function JoinFlow({ code }: { code: string }) {
             <span style={S.kicker}>Almost there</span>
             <h1 style={S.h1}>Ready to send?</h1>
             <p style={S.sub}>
-              {dates.length} {dates.length === 1 ? "date" : "dates"} · {likedCount}{" "}
+              {dateRangeLabel(dates[0], dates[dates.length - 1])} · {nights}{" "}
+              {nights === 1 ? "night" : "nights"} · {likedCount}{" "}
               {likedCount === 1 ? "place" : "places"} you love
             </p>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 14 }}>
