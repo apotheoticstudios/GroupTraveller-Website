@@ -124,6 +124,17 @@ function mondayIndex(iso: string): number {
   return (new Date(y, m - 1, d).getDay() + 6) % 7;
 }
 
+/**
+ * Stable idempotency key per browser + trip, so a reload or retry mid-submit
+ * cannot create a duplicate response.
+ *
+ * KNOWN LIMITATION: because it is stable, this browser can hold exactly ONE
+ * answer per trip — a second person on a shared device edits the first
+ * person's response rather than adding their own. That is deliberate (the
+ * submit path follows up with update_trip_response so a returning voter's edit
+ * saves), but the app offers an explicit "submitting for somebody else?" path
+ * that the web flow does not. Worth adding if shared-device answering matters.
+ */
 function submissionId(tripId: string): string {
   const key = `grouptraveller/web-submission/${tripId}`;
   try {
@@ -382,7 +393,15 @@ export default function JoinFlow({ code }: { code: string }) {
   // Guests must pick ONE consecutive block whose length matches the trip the
   // organiser planned. Mirrors lib/dateSelection.ts in the app — kept in sync by
   // hand because the two bundles share no code.
-  const minNights = trip.trip_length_min;
+  // Clamp to what the organiser's window can actually hold — mirrors the app.
+  // Without it a trip whose date range is shorter than its minimum length is
+  // unanswerable here too: every possible range reads "too short" and Next
+  // never enables.
+  const windowNights = Math.max(
+    0,
+    eachDate(trip.date_range_start, trip.date_range_end).length - 1
+  );
+  const minNights = Math.min(trip.trip_length_min, windowNights);
   const nights = Math.max(0, dates.length - 1);
   const hasCompleteRange = dates.length > 1;
   const datesValid = hasCompleteRange && nights >= minNights;
