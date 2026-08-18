@@ -32,6 +32,12 @@ interface TripInvite {
   trip_length_max: number;
   group_size_estimate: number;
   status: "open" | "closed" | "decided";
+  /**
+   * The organiser's voting deadline. `status` stays "open" past it — the server
+   * rejects late submissions on time, not on status — so gating on status alone
+   * walked guests through the whole flow before failing at the last step.
+   */
+  voting_closes_at: string | null;
   destinations: Destination[];
   responseCount: number;
 }
@@ -135,6 +141,19 @@ function mondayIndex(iso: string): number {
  * saves), but the app offers an explicit "submitting for somebody else?" path
  * that the web flow does not. Worth adding if shared-device answering matters.
  */
+/**
+ * Read-only counterpart to `submissionId` — it must NOT mint an id, or merely
+ * rendering the page would make every first-time visitor look like a returning
+ * voter and walk them past the capacity gate.
+ */
+function hasSubmittedBefore(tripId: string): boolean {
+  try {
+    return localStorage.getItem(`grouptraveller/web-submission/${tripId}`) !== null;
+  } catch {
+    return false;
+  }
+}
+
 function submissionId(tripId: string): string {
   const key = `grouptraveller/web-submission/${tripId}`;
   try {
@@ -372,7 +391,18 @@ export default function JoinFlow({ code }: { code: string }) {
     );
   }
 
-  if (trip.status !== "open") {
+  // The deadline is a separate condition from status: `status` only flips when
+  // the organiser closes the trip or the results are locked in, so a trip whose
+  // deadline has simply lapsed still reads as "open" here. The server enforces
+  // the deadline on submit, which meant a guest could fill in dates and swipe
+  // every destination before being told, in raw RPC wording, that it was too
+  // late. Mirrors the app's `votingIsOpen` check.
+  const deadlineHasPassed =
+    trip.voting_closes_at !== null &&
+    Number.isFinite(Date.parse(trip.voting_closes_at)) &&
+    Date.parse(trip.voting_closes_at) <= Date.now();
+
+  if (trip.status !== "open" || deadlineHasPassed) {
     return (
       <Shell>
         <div style={S.card}>
@@ -384,6 +414,28 @@ export default function JoinFlow({ code }: { code: string }) {
             {trip.status === "decided"
               ? "This trip is decided — the group already picked. Ask the organiser for the details!"
               : "Voting has closed for this trip. Ask the organiser if it can be reopened."}
+          </p>
+        </div>
+      </Shell>
+    );
+  }
+
+  // Capacity is likewise enforced server-side only. A returning voter is let
+  // through even when the trip is full — they already hold one of the spots,
+  // and `submit_trip_response` replays their receipt rather than taking a new
+  // one, so blocking them here would strand them mid-edit.
+  const tripIsFull =
+    trip.responseCount >= Math.max(1, trip.group_size_estimate);
+
+  if (tripIsFull && !hasSubmittedBefore(trip.id)) {
+    return (
+      <Shell>
+        <div style={S.card}>
+          <span style={S.kicker}>Trip is full</span>
+          <h1 style={S.h1}>{trip.title}</h1>
+          <p style={S.sub}>
+            All {trip.group_size_estimate} traveller spots are filled. Ask the
+            organiser to raise the group size if you still need to join.
           </p>
         </div>
       </Shell>
